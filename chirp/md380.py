@@ -26,55 +26,64 @@
 
 import logging
 
-from chirp.settings import RadioSetting, RadioSettingGroup, \
-    RadioSettingValueInteger, RadioSettingValueString, \
-    RadioSettings
-
+from chirp.settings import RadioSetting, RadioSettingGroup, RadioSettingValueInteger, RadioSettingValueString, RadioSettings
 from chirp import bitwise
 from chirp import chirp_common, directory, memmap
 
+
 LOG = logging.getLogger(__name__)
 
-# Someday I'll figure out Chinese encoding, but for now we'll stick to ASCII.
-CHARSET = ["%i" % int(x) for x in range(0, 10)] + \
-          [chr(x) for x in range(ord("A"), ord("Z") + 1)] + \
-          [" ", ] + \
-          [chr(x) for x in range(ord("a"), ord("z") + 1)] + \
-          list(".,:;*#_-/&()@!?^ +") + list("\x00" * 100)
-DUPLEX = ["", "-", "+", "split"]
-# TODO 'DMR' should be added as a valid mode.
-MODES = ["DIG", "NFM", "FM"]
-TMODES = ["", "Tone", "TSQL"]
 
-# Here is where we define the memory map for the radio. Since
-# We often just know small bits of it, we can use #seekto to skip
-# around as needed.
+# Someday I'll figure out Chinese encoding, but for now we'll stick to ASCII.
+CHARSET = ["%i" % int(x) for x in range(0, 10)] +[chr(x) for x in range(ord("A"), ord("Z") + 1)] + \
+          [" ", ] + [chr(x) for x in range(ord("a"), ord("z") + 1)] + list(".,:;*#_-/&()@!?^ +") + list("\x00" * 100)
+
+DUPLEX = [
+    "",
+    "-",
+    "+",
+    "split"
+]
+
+# TODO 'DMR' should be added as a valid mode.
+MODES = [
+    "DIG",
+    "NFM",
+    "FM"
+]
+
+TMODES = [
+    "",
+    "Tone",
+    "TSQL"
+]
+
+
+# Here is where we define the memory map for the radio. Since we often just know small bits of it, we can use #seekto to
+# skip around as needed.
 #
-# Large parts of this have yet to be reverse engineered, but I'm
-# getting there slowly.
+# Large parts of this have yet to be reverse engineered, but I'm getting there slowly.
 MEM_FORMAT = """
 
 #seekto 0x2180;
 struct {
-  char messages[288]; // 144 half-length characters, like always.
+    char messages[288]; // 144 half-length characters, like always.
 } messages[50];
 
 
 #seekto 0x0005F80;
 struct {
-  ul24 callid;   //DMR Call ID
-  u8   flags;    //c1 for group call without an rx tone
-                 //c2 for private with no tone
-                 //e1 for a group call with an rx tone.
-  char name[32]; //U16L chars, of course.
+    ul24 callid;    // DMR Call ID
+    u8 flags;       // c1 for group call without an rx tone; c2 for private with no tone; e1 for a group call with an rx tone.
+    char name[32];  // U16L chars, of course.
 } contacts[1000];
 
 
 #seekto 0x00018860;
 struct {
-  char name[32];    //UTF16L, like always.
-  u8 flags[10];     //last channel, priority, hold timing, sample time.
-  ul16 members[31]; //Just a list; unused entries are zeroed.
+    char name[32];    // UTF16L, like always.
+    u8 flags[10];     // last channel, priority, hold timing, sample time.
+    ul16 members[31]; // Just a list; unused entries are zeroed.
 } scanlists[20];
 
 #seekto 0x0001EE00;
@@ -92,19 +101,17 @@ struct { //0x1F025 into rdt
     //  qt reverse, and reverse burst/turn-off code
     // DCS probably doesn't work at all
 
-  //First byte is 62 for digital, 61 for analog
-  u8 mode;   //Upper nybble is 6 for normal squelch, 4 for tight squelch
-             //Low nybble is
-             //61 for digital, 61 for nbfm, 69 for wbfm
-  u8 slot;       //Upper nybble is the color code
-                 //lower nybble is bitfield:
+    //First byte is 62 for digital, 61 for analog
+    u8 mode;   // Upper nibble is 6 for normal squelch, 4 for tight squelch; Low nibble is 61 for digital, 61 for nbfm, 69 for wbfm
+  u8 slot;       //Upper nibble is the color code
+                 //lower nibble is bitfield:
                  // |4 for S1, |8 for S2
                  // |2 for RX-ONLY
                  // |1 for talkaround allowed
                  //slotnotes:  0000 0000
                  //            colr 12rt
-  char priv;           //Upper nybble is 0 for cleartex, 1 for Basic Privacy, 2 for Enhanced Privacy.
-                       //Low nybble is key index.  (E is slot 15, 0 is slot 1.)
+  char priv;           //Upper nibble is 0 for cleartex, 1 for Basic Privacy, 2 for Enhanced Privacy.
+                       //Low nibble is key index.  (E is slot 15, 0 is slot 1.)
   char wase0;          //Unknown, normally E0
                         //0xa0 for "compressed udp data header" turned on
   char power;          //24 for high power, 04 for low power TODO
@@ -412,7 +419,9 @@ class MD380BankModel(chirp_common.MTOBankModel):
 # Uncomment this to actually register this radio in CHIRP
 @directory.register
 class MD380Radio(chirp_common.CloneModeRadio):
-    """MD380 Binary File"""
+    """
+    TYT MD-380 Binary File
+    """
     VENDOR = "TYT"
     MODEL = "MD-380"
     FILE_EXTENSION = "img"
@@ -422,13 +431,9 @@ class MD380Radio(chirp_common.CloneModeRadio):
 
     @classmethod
     def match_model(cls, filedata, filename):
-        return (
-            len(filedata) == cls._memsize
-            or len(filedata) == cls._memsize + 565
-        )
+        return ((len(filedata) == cls._memsize) or (len(filedata) == cls._memsize + 565))
 
-    # Return information about this radio's features, including
-    # how many memories it has, what bands it supports, etc
+    # Return information about this radio's features, including how many memories it has, what bands it supports, etc.
     def get_features(self):
         rf = chirp_common.RadioFeatures()
         rf.has_bank = True
@@ -436,11 +441,11 @@ class MD380Radio(chirp_common.CloneModeRadio):
         rf.has_bank_names = True
         rf.can_odd_split = True
         rf.valid_tmodes = TMODES
-        rf.memory_bounds = (1, 999)  # Maybe 1000?
-
-        rf.valid_bands = [(400000000, 480000000),  # 70cm model is most common.
-                          (136000000, 174000000)  # 2m model sold separately.
-                          ]
+        rf.memory_bounds = (1, 999)     # Maybe 1000?
+        rf.valid_bands = [
+            (400000000, 480000000),     # 70cm model is most common.
+            (136000000, 174000000)      # 2m model sold separately.
+        ]
         rf.valid_characters = "".join(CHARSET)
         rf.has_settings = True
         rf.has_tuning_step = False
@@ -449,8 +454,18 @@ class MD380Radio(chirp_common.CloneModeRadio):
         rf.has_cross = False
         rf.valid_modes = list(MODES)
         rf.valid_skips = [""]  # ["", "S"]
-        #        rf.valid_tmodes = ["", "Tone", "TSQL", "DTCS", "Cross"]
-        rf.valid_tmodes = ["", "Tone", "TSQL"]
+#       rf.valid_tmodes = [
+#           "",
+#           "Tone",
+#           "TSQL",
+#           "DTCS",
+#           "Cross"
+#       ]
+        rf.valid_tmodes = [
+            "",
+            "Tone",
+            "TSQL"
+        ]
         rf.valid_duplexes = list(DUPLEX)
         rf.valid_name_length = 16
         return rf
@@ -461,33 +476,31 @@ class MD380Radio(chirp_common.CloneModeRadio):
             self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
         elif len(self._mmap) == self._memsize + 565:
             self._memobj = bitwise.parse(MEM_FORMAT, self._mmap[549:])
-
-            # self._memobj = bitwise.parse(
-            #    MEM_FORMAT, self._mmap)
+#           self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
 
     # Do a download of the radio from the serial port
     def sync_in(self):
         pass
 
-    #         try:
-    #             self._mmap = do_download(self)
-    #         except errors.RadioError:
-    #             raise
-    #         except Exception, e:
-    #             raise errors.RadioError("Failed to communicate with radio: %s" % e)
-    #         #hexdump(self._mmap);
+#       try:
+#           self._mmap = do_download(self)
+#       except errors.RadioError:
+#           raise
+#       except Exception, e:
+#           raise errors.RadioError("Failed to communicate with radio: %s" % e)
+#       #hexdump(self._mmap);
 
-    #         if(len(self._mmap)==self._memsize):
-    #             self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
-    #         else:
-    #             raise errors.RadioError("Incorrect 'Model' selected.")
+#       if(len(self._mmap)==self._memsize):
+#           self._memobj = bitwise.parse(MEM_FORMAT, self._mmap)
+#       else:
+#           raise errors.RadioError("Incorrect 'Model' selected.")
+
     # Do an upload of the radio to the serial port
     def sync_out(self):
-        # do_upload(self)
+#       do_upload(self)
         pass
 
-    # Return a raw representation of the memory object, which
-    # is very helpful for development
+    # Return a raw representation of the memory object, which is very helpful for development
     def get_raw_memory(self, number):
         return repr(self._memobj.memory[number - 1])
 
@@ -660,3 +673,4 @@ class MD380Radio(chirp_common.CloneModeRadio):
 
     def get_bank_model(self):
         return MD380BankModel(self)
+

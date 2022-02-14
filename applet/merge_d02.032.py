@@ -410,39 +410,45 @@ if __name__ == '__main__':
         0x0803f7b8, 0x0803f7dc, 0x0803f81e, 0x0803f846, 0x0803f872, 0x0803f8aa, 0x0803f8ca, 0x0803f8f6,
         0x0803fd1a, 0x0803fd76, 0x08040340, 0x080406f4, 0x08040924, 0x08040ca8, 0x08040cc8, 0x08040d04,
         0x080411c2, 0x080411da, 0x08041226, 0x0804358c, 0x080440ea, 0x080446b8, 0x080447da, 0x0804b724,
-        0x0808ce7e, 0x0808ce94, 0x0808ceda, 0x0808cf0c, 0x0808cfba]
-    #    for adr in OSMboxPost_hook_list:
-    #        merger.hookbl(adr,sapplet.getadr("OSMboxPost_hook"),0);
+        0x0808ce7e, 0x0808ce94, 0x0808ceda, 0x0808cf0c, 0x0808cfba
+    ]
+#   for adr in OSMboxPost_hook_list:
+#       merger.hookbl(adr, sapplet.getadr("OSMboxPost_hook"), 0);
 
     # Throwaway hook to see if adr is called.
-    # merger.hookstub(0x0803f03c,
-    #                sapplet.getadr("demo"));
+#   merger.hookstub(0x0803f03c, sapplet.getadr("demo"));
 
-    f_4137_hook_list=[
-        0x8027fe2, 0x8028288, 0x8028298, 0x80282f0];
+    f_4137_hook_list = [
+        0x8027fe2,
+        0x8028288,
+        0x8028298,
+        0x80282f0
+    ];
 
-#    for adr in f_4137_hook_list:
-#        merger.hookbl(adr,sapplet.getadr("f_4137_hook"),0);
-#    merger.hookbl(0x804464a,sapplet.getadr("f_4520_hook"),0);
-#    merger.hookbl(0x8044642,sapplet.getadr("f_4098_hook"),0);
-#    merger.hookbl(0x804c1e8,sapplet.getadr("f_4102_hook"),0);
+#   for adr in f_4137_hook_list:
+#       merger.hookbl(adr,sapplet.getadr("f_4137_hook"), 0);
+#   merger.hookbl(0x804464a,sapplet.getadr("f_4520_hook"), 0);
+#   merger.hookbl(0x8044642,sapplet.getadr("f_4098_hook"), 0);
+#   merger.hookbl(0x804c1e8,sapplet.getadr("f_4102_hook"), 0);
 
-    merger.hookbl(0x8044662, sapplet.getadr("f_4225_hook"),0);
-    
-    
-    # DL4YHF : We don't know here if the PWM'ed backlight, and thus
-    #  SysTick_Handler() shall be included (depends on config.h) .
+    merger.hookbl(0x8044662, sapplet.getadr("f_4225_hook"), 0);
+
+
+    # DL4YHF:
+    # We don't know here if the PWM'ed backlight, and thus SysTick_Handler() shall be included (depends on config.h).
     # IF   the applet's symbol table contains a function named 'SysTick_Handler',
-    # THEN patch its address, MADE ODD to indicate Thumb-code, into the
-    # interrupt-vector-table as explained in applet/src/irq_handlers.c :
-    # ex: new_adr = sapplet.getadr("SysTick_Handler"); # threw an exception when "not found" :(
+    # THEN patch its address, MADE ODD to indicate Thumb-code, into the interrupt-vector-table as explained in
+    # 'applet/src/irq_handlers.c':
+    #
+    # EXAMPLE:
+    #   new_adr = sapplet.getadr("SysTick_Handler"); # threw an exception when "not found" :(
     new_adr = sapplet.try_getadr("SysTick_Handler");
     if new_adr != None:
         vect_adr = 0x800C03C;  # address inside the VT for SysTick_Handler
         exp_adr  = 0x809381D;  # expected 'old' content of the above VT entry
         old_adr  = merger.getword(vect_adr); # original content of the VT entry
         new_adr |= 0x0000001;  # Thumb flag for new content in the VT
-        if( old_adr == exp_adr ) :
+        if (old_adr == exp_adr):
            print("Patching SysTick_Handler in VT addr 0x%08x," % vect_adr)
            print("  old value in vector table = 0x%08x," % old_adr)
            print("   expected in vector table = 0x%08x," % exp_adr)
@@ -453,32 +459,26 @@ if __name__ == '__main__':
            print("Cannot patch SysTick_Handler() !")
     else:
            print("No SysTick_Handler() found in the symbol table. Building firmware without.")
-    
-    print("Merging %s into %s at %08x" % (
-          sys.argv[2],
-          sys.argv[1],
-          index))
-    
-    i=0;
+
+    print("Merging %s into %s at %08x" % (sys.argv[2], sys.argv[1], index))
+
+    i = 0;
     for b in bapplet:
-        merger.setbyte(index+i,bapplet[i]);
-        i=i+1;
+        merger.setbyte(index + i, bapplet[i]);
+        i = i + 1;
     
     merger.export(sys.argv[1]);
 
 
-    #    for adr in f_4137_hook_list:
-    #        merger.hookbl(adr,sapplet.getadr("f_4137_hook"),0);
-    #    merger.hookbl(0x804464a,sapplet.getadr("f_4520_hook"),0);
-    #    merger.hookbl(0x8044642,sapplet.getadr("f_4098_hook"),0);
-    #    merger.hookbl(0x804c1e8,sapplet.getadr("f_4102_hook"),0);
+#   for adr in f_4137_hook_list:
+#       merger.hookbl(adr,sapplet.getadr("f_4137_hook"),0);
+#   merger.hookbl(0x804464a,sapplet.getadr("f_4520_hook"),0);
+#   merger.hookbl(0x8044642,sapplet.getadr("f_4098_hook"),0);
+#   merger.hookbl(0x804c1e8,sapplet.getadr("f_4102_hook"),0);
 
     merger.hookbl(0x8044662, sapplet.getadr("f_4225_hook"), 0)
 
-    print("Merging %s into %s at %08x" % (
-        sys.argv[2],
-        sys.argv[1],
-        index))
+    print("Merging %s into %s at %08x" % (sys.argv[2], sys.argv[1], index))
 
     i = 0
     for b in bapplet:
@@ -486,3 +486,4 @@ if __name__ == '__main__':
         i += 1
 
     merger.export(sys.argv[1])
+

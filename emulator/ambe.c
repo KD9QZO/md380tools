@@ -1,49 +1,58 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<errno.h>
-#include<sys/mman.h>
-#include<sys/types.h>
-#include<sys/stat.h>
-#include<fcntl.h>
-#include<unistd.h>
-#include<string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
 
 #include "md380-emu.h"
 #include "ambe.h"
 
 
-extern int ambe_inbuffer, ambe_outbuffer0, ambe_outbuffer1, ambe_mystery;
-extern int ambe_outbuffer, wav_inbuffer0, wav_inbuffer1, ambe_en_mystery;
 
-/* Decodes an AMBE2+ frame to verify that the decoding function
-   works. Expect to significantly decode this, or maybe give it
-   a coredumped RAM image.
-*/
-void decode_amb_file(char *infilename,
-		     char *outfilename){
+extern int ambe_inbuffer;
+extern int ambe_outbuffer0;
+extern int ambe_outbuffer1;
+extern int ambe_mystery;
+extern int ambe_outbuffer;
+extern int wav_inbuffer0;
+extern int wav_inbuffer1;
+extern int ambe_en_mystery;
 
-  int ambfd=STDIN_FILENO;
-  int wavfd=STDOUT_FILENO;
 
-  if(mprotect((void*)0x800c000, 0xf2c00, PROT_EXEC)){
-	fprintf(stderr, "Failed to set firmware section executable, vocoding will probably fail.\n");
-  }
-    
-  if (infilename)
-    ambfd=open(infilename,0);
-  
-  if (outfilename)
-    wavfd=creat(outfilename,0666);
 
-  //FIXME These are unique to 2.032 firmware; should be symbols instead.
-  short *ambe=(short*) &ambe_inbuffer; //0x20011c8e;
-  short *outbuf0=(short*) &ambe_outbuffer0; //0x20011aa8;//80 samples
-  short *outbuf1=(short*) &ambe_outbuffer1; //0x20011b48;//80 samples
-  unsigned char packed[8]; //8 byte frames.
+/* 
+ * Decodes an AMBE2+ frame to verify that the decoding function works. Expect to significantly decode this, or maybe
+ * give it a coredumped RAM image.
+ */
+void decode_amb_file(char *infilename, char *outfilename) {
+	int ambfd = STDIN_FILENO;
+	int wavfd = STDOUT_FILENO;
 
-  //ambe_init_stuff();
+	if (mprotect((void*)0x800C000, 0x0F2C00, PROT_EXEC)) {
+		fprintf(stderr, "Failed to set firmware section executable, vocoding will probably fail.\n");
+	}
 
-  if(4!=read(ambfd,packed,4)){
+	if (infilename)
+		ambfd = open(infilename, 0);
+
+	if (outfilename)
+		wavfd = creat(outfilename, 0666);
+
+	//FIXME These are unique to 2.032 firmware; should be symbols instead.
+	short *ambe = (short*)&ambe_inbuffer;		// 0x20011c8e;
+	short *outbuf0 = (short*)&ambe_outbuffer0;	// 0x20011aa8;//80 samples
+	short *outbuf1 = (short*)&ambe_outbuffer1;	// 0x20011b48;//80 samples
+	unsigned char packed[8];					// 8 byte frames.
+
+#if 0
+	ambe_init_stuff();
+#endif
+
+	if (4 != read(ambfd, packed, 4)) {
     fprintf(stderr,"Unable to read header of %s.\n",infilename);
     exit(1);
   }
@@ -130,9 +139,7 @@ int ambe_encode_thing2(short *bitbuffer,
 
 
 
-void encode_wav_file(char *infilename,
-		     char *outfilename){
-
+void encode_wav_file(char *infilename, char *outfilename) {
   int wavfd=STDIN_FILENO;
   int ambfd=STDOUT_FILENO;
 
@@ -221,3 +228,4 @@ void encode_wav_file(char *infilename,
   close(ambfd);
   fprintf(stderr,"Done with AMBE test.\n");
 }
+

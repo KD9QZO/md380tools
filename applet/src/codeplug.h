@@ -3,64 +3,63 @@
  * 
  */
 
-#ifndef CODEPLUG_H
-#define CODEPLUG_H
+#ifndef CODEPLUG_H_
+#define CODEPLUG_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 // A few address offsets inside SPI-flash, occupied by the codeplug.
 // First used by the 'alternative' menu, see amenu_codeplug.c .
 // The codeplug seems to live in the first 256 kByte of the SPI-Flash.
 // The *.rdt file is *not* an exact image of this part of the Flash !
 // Offsets in the RDT file are a bit higher (549 bytes?) than in SPI-flash.
-#define CODEPLUG_SPIFLASH_ADDR_CHANNEL 0x0001EE00   
-#define CODEPLUG_SIZEOF_CHANNEL_ENTRY 64
-#define CODEPLUG_MAX_CHANNELS   1000
+#define CODEPLUG_SPIFLASH_ADDR_CHANNEL	0x0001EE00
+#define CODEPLUG_SIZEOF_CHANNEL_ENTRY	64
+#define CODEPLUG_MAX_CHANNELS			1000
 
-	typedef struct
-	{
-		uint8_t settings[32];
-		wchar_t name[16];
-	} channel_t;
 
-	typedef struct
-	{
-		uint8_t digits[8];
-		char text[16];
-	} frequency_t;
 
-	typedef struct
-	{
-		uint8_t digits[4];
-		char text[16];
-		uint8_t fType;
-		float freq;
-	} tone_t;
+typedef struct {
+	uint8_t settings[32];
+	wchar_t name[16];
+} channel_t;
 
-	typedef struct
-	{
-		uint8_t bIsDigital;
-		uint8_t CC;
-		uint8_t Slot;
-		uint16_t ContactIndex;
-		uint8_t TOT;
-		uint8_t TOTReKeyDelay;
-		uint8_t EmergencyIndex;
-		uint8_t ScanListIndex;
-		uint8_t GroupListIndex;
+typedef struct {
+	uint8_t digits[8];
+	char text[16];
+} frequency_t;
 
-		uint8_t AutoScan;
+typedef struct {
+	uint8_t digits[4];
+	char text[16];
+	uint8_t fType;
+	float freq;
+} tone_t;
 
-		tone_t DecTone;
-		tone_t EncTone;
+typedef struct {
+	uint8_t bIsDigital;
+	uint8_t CC;
+	uint8_t Slot;
+	uint16_t ContactIndex;
+	uint8_t TOT;
+	uint8_t TOTReKeyDelay;
+	uint8_t EmergencyIndex;
+	uint8_t ScanListIndex;
+	uint8_t GroupListIndex;
 
-		frequency_t rxFreq;
-		frequency_t txFreq;
+	uint8_t AutoScan;
 
-		char name[16];
-	} channel_easy;
+	tone_t DecTone;
+	tone_t EncTone;
+
+	frequency_t rxFreq;
+	frequency_t txFreq;
+
+	char name[16];
+} channel_easy;
 
 // The first entry in the 'Digital Contacts' lists (e.g. first entry '-All Call-')
 // was as 0x00005F84 in SPI flash, but 0x000061A9 in an RDT file (delta=549 bytes): 
@@ -96,41 +95,39 @@ extern "C" {
 # define CODEPLUG_RAM_ADDR_ZONE_NUMBER_STRUCT 0x2001E64C
 #endif // S13.020
 
-typedef struct
-{ // Saved  as a FIVE-byte-thing in SPI-Flash @ 0x2F000, see 0x8022ece in D13.020;
-  // Loaded as a FIVE-byte-thing from Flash into RAM @ 0x2001E57C, see 0x8022ebc in D13.020.
-  uint8_t unknown_ff[3]; // these bytes always seemed to contain 0xFF
-  uint8_t zone_index;    // ONE-based zone index (first zone in the list = index ONE, not ZERO!)
-  uint8_t unknown2_ff;   // in an RT3 with D13.020, also 0xFF here
-} zone_number_t; 
+typedef struct {	// Saved  as a FIVE-byte-thing in SPI-Flash @ 0x2F000, see 0x8022ece in D13.020;
+					// Loaded as a FIVE-byte-thing from Flash into RAM @ 0x2001E57C, see 0x8022ebc in D13.020.
+	uint8_t unknown_ff[3]; // these bytes always seemed to contain 0xFF
+	uint8_t zone_index;    // ONE-based zone index (first zone in the list = index ONE, not ZERO!)
+	uint8_t unknown2_ff;   // in an RT3 with D13.020, also 0xFF here
+} zone_number_t;
 
-	typedef struct
-	{
-		wchar_t name[16];
-		uint16_t channels[16];
-	} zone_t;
+typedef struct {
+	wchar_t name[16];
+	uint16_t channels[16];
+} zone_t;
 
 // contact_t.type
 #define CONTACT_GROUP 0xC1
 #define CONTACT_GROUP2 0xE1
 #define CONTACT_USER 0xC2
-    
-// 0xfc000000 @ 0x0805031e    
-typedef struct {    
-    uint8_t id_l ;
-    uint8_t id_m ;
-    uint8_t id_h ;
-    uint8_t type ;
-    wchar_t name[16];
-} contact_t ; // sizeof() = 36 (0x24)
+
+// 0xfc000000 @ 0x0805031e
+typedef struct {
+	uint8_t id_l;
+	uint8_t id_m;
+	uint8_t id_h;
+	uint8_t type;
+	wchar_t name[16];
+} contact_t; // sizeof() = 36 (0x24)
 
 #if defined(FW_D13_020) || defined(FW_S13_020)
-# define HAVE_ZONE_NAME 1
+#define HAVE_ZONE_NAME 1
 extern wchar_t zone_name[16];   // 32 bytes @ 0x2001cddc in D13.020
 #endif
 
 #if defined(FW_D13_020) /* no time to investigate this: || defined(FW_S13_020) */
-# define HAVE_ZONE_NAME_2 1
+#define HAVE_ZONE_NAME_2 1
 extern wchar_t zone_name_2[32]; // 64 bytes @ 0x2001e218 in D13.020 
    // The first half of zone_name_2 @ 0x2001e218 contained the same as zone_name @ 0x2001cddc .
    // zone_name_2 is the destination buffer when reading from SPI-lash - see 0x08022d74 .
@@ -138,7 +135,7 @@ extern wchar_t zone_name_2[32]; // 64 bytes @ 0x2001e218 in D13.020
 #endif
 
 #ifndef  HAVE_ZONE_NAME
-# define HAVE_ZONE_NAME 0
+#define HAVE_ZONE_NAME 0
 //#warning "Please try to find the equivalent of 'zone_name' (@ 0x2001cddc in D13.020) !"
 #endif
 
